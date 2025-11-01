@@ -1369,9 +1369,8 @@ class Fits2caom2VisitorRunnerMeta(Fits2caom2Visitor):
     def _get_mappings(self, dest_uri):
         return [TelescopeMapping2(
             self._storage_name,
-            self._storage_name.metadata.get(dest_uri),
             self._clients,
-            self._reporter._observable,
+            self._reporter,
             self._observation,
             self._config,
         )]
