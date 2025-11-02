@@ -165,6 +165,7 @@ class DataSource:
         """
         for extension in self._extensions:
             if entry.name.endswith(extension):
+                self._logger.debug(f'default_filter passed with matching extension for {entry}')
                 return True
         return False
 
