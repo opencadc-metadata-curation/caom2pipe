@@ -2137,7 +2137,7 @@ class PreviewVisitor:
                 count += self._do_prev(plane, observation.observation_id)
             self._augment_artifacts(plane)
             self._delete_list_of_files()
-        self._logger.info(
+        self._logger.debug(
             f'Completed preview augmentation for {observation.observation_id}. Changed {count} artifacts.'
         )
         self._report = {'artifacts': count}
