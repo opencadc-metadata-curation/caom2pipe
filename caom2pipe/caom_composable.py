@@ -1429,3 +1429,96 @@ class Fits2caom2VisitorRunnerMeta(Fits2caom2Visitor):
 
         self._logger.debug('End visit')
         return self._observation
+
+
+class File2caom2Visitor(Fits2caom2Visitor):
+    """
+    Use a TelescopeMapping2 specialization instance to create a CAOM2 record, as expected by the
+    execute_composable.MetaVisits class.
+
+    This class supports n mappings per file (e.g. TAOSII files with IMAGE and LIGHTCURVE metadata).
+    """
+
+    def __init__(self, observation, **kwargs):
+        self._observation = observation
+        self._storage_name = kwargs.get('storage_name')
+        self._clients = kwargs.get('clients')
+        self._reporter = kwargs.get('reporter')
+        self._config = kwargs.get('config')
+        self._logger = logging.getLogger(self.__class__.__name__)
+
+    def _get_parser(self, blueprint, uri, mapping):
+        headers = self._storage_name.metadata.get(uri)
+        if headers is None or len(headers) == 0:
+            self._logger.debug(f'No headers, using a BlueprintParser for {self._storage_name.file_uri}')
+            parser = BlueprintParser(blueprint, uri)
+        else:
+            self._logger.debug(f'Using a FitsParser for {self._storage_name.file_uri}')
+            parser = FitsParser(headers, blueprint, uri)
+        self._logger.debug(f'Created {parser.__class__.__name__} parser for {uri}.')
+        return parser
+
+    def _get_mappings(self, dest_uri):
+        return [TelescopeMapping2(
+            self._storage_name,
+            self._storage_name.metadata.get(dest_uri),
+            self._clients,
+            self._reporter._observable,
+            self._observation,
+            self._config,
+        )]
+
+    def visit(self):
+        self._logger.debug('Begin visit')
+        try:
+            for uri in self._storage_name.destination_uris:
+                self._logger.debug(f'Build observation for {uri}')
+                telescope_mappings = self._get_mappings(uri)
+                if telescope_mappings is None or len(telescope_mappings) == 0:
+                    self._logger.info(f'Ignoring {uri} because there is no TelescopeMapping.')
+                    continue
+                for mapping in telescope_mappings:
+                    blueprint = self._get_blueprint(mapping)
+                    mapping.accumulate_blueprint(blueprint)
+                    if self._config.dump_blueprint and self._config.log_to_file:
+                        with open(f'{self._config.log_file_directory}/{os.path.basename(uri)}.bp', 'w') as f:
+                            f.write(blueprint.__str__())
+                    parser = self._get_parser(blueprint, uri, mapping)
+
+                    if self._observation is None:
+                        if blueprint._get('DerivedObservation.members') is None:
+                            self._logger.debug('Build a SimpleObservation')
+                            self._observation = SimpleObservation(
+                                collection=self._storage_name.collection,
+                                observation_id=self._storage_name.obs_id,
+                                algorithm=Algorithm('exposure'),
+                            )
+                        else:
+                            self._logger.debug('Build a DerivedObservation')
+                            algorithm_name = (
+                                'composite'
+                                if blueprint._get('Observation.algorithm.name') == 'exposure'
+                                else parser._get_from_list('Observation.algorithm.name', 0)
+                            )
+                            self._observation = DerivedObservation(
+                                collection=self._storage_name.collection,
+                                observation_id=self._storage_name.obs_id,
+                                algorithm=Algorithm(algorithm_name),
+                            )
+                    mapping.observation = self._observation
+                    parser.augment_observation(
+                        observation=self._observation,
+                        artifact_uri=uri,
+                        product_id=self._storage_name.product_id,
+                    )
+                    self._observation = mapping.update()
+        except Caom2Exception as e:
+            self._logger.debug(traceback.format_exc())
+            self._logger.warning(
+                f'CAOM2 record creation failed for {self._storage_name.obs_id}'
+                f':{self._storage_name.file_name} with {e}'
+            )
+            self._observation = None
+
+        self._logger.debug('End visit')
+        return self._observation
