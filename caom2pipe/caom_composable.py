@@ -1432,14 +1432,10 @@ class Fits2caom2VisitorRunnerMeta(Fits2caom2Visitor):
         return self._observation
 
 
-class Fits2caom2VisitorRunnerMeta2(Fits2caom2Visitor):
+class File2caom2Visitor(Fits2caom2Visitor):
     """
     Use a TelescopeMapping2 specialization instance to create a CAOM2 record, as expected by the
     execute_composable.MetaVisits class.
-
-    This is a temporary class to support refactoring, and when all dependent applications have also been refactored
-    to provide the expected StorageName API, this class will be integrated back into the Fits2caom2Visitor class.
-    This class also works for HDF5 files, so it will probably be renamed to something like File2caom2Visitor then.
 
     This class supports n mappings per file (e.g. TAOSII files with IMAGE and LIGHTCURVE metadata).
     """
