@@ -146,6 +146,7 @@ __all__ = [
     'Rejected',
     'reverse_lookup',
     'search_for_file',
+    'search_for_source_name',
     'StorageName',
     'State',
     'TaskType',
@@ -2099,6 +2100,7 @@ class PreviewVisitor:
         if self._storage_name is None:
             raise CadcException('Visitor needs a storage_name parameter.')
         self._metadata_reader = kwargs.get('metadata_reader')
+        self._config = kwargs.get('config')
         self._science_file = self._storage_name.file_name
         self._science_fqn = self._storage_name.get_file_fqn(self._working_dir)
         self._preview_fqn = os.path.join(self._working_dir, self._storage_name.prev)
@@ -2135,7 +2137,7 @@ class PreviewVisitor:
                 count += self._do_prev(plane, observation.observation_id)
             self._augment_artifacts(plane)
             self._delete_list_of_files()
-        self._logger.info(
+        self._logger.debug(
             f'Completed preview augmentation for {observation.observation_id}. Changed {count} artifacts.'
         )
         self._report = {'artifacts': count}
@@ -3078,6 +3080,19 @@ def search_for_file(storage_name, working_directory):
     elif len(storage_name.source_names) > 0 and os.path.exists(storage_name.source_names[0]):
         # use the compressed file, if it can be found
         fqn = storage_name.source_names[0]
+    return fqn
+
+
+def search_for_source_name(obs_id, source_name, working_directory):
+    temp_fqn = os.path.join(working_directory, os.path.basename(source_name))
+    temp_obs_fqn = os.path.join(os.path.join(working_directory, obs_id), os.path.basename(source_name))
+    fqn = ''
+    if os.path.exists(source_name):
+        fqn = source_name
+    elif os.path.exists(temp_fqn):
+        fqn = temp_fqn
+    elif os.path.exists(temp_obs_fqn):
+        fqn = temp_obs_fqn
     return fqn
 
 

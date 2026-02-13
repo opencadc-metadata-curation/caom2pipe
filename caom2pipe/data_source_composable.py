@@ -165,6 +165,7 @@ class DataSource:
         """
         for extension in self._extensions:
             if entry.name.endswith(extension):
+                self._logger.debug(f'default_filter passed with matching extension for {entry}')
                 return True
         return False
 
@@ -765,6 +766,7 @@ class LocalFilesDataSourceRunnerMeta(LocalFilesDataSource):
         self._temp_storage_name = None
 
     def _append_work(self, prev_exec_dt, exec_dt, entry_path):
+        self._logger.debug(f'Begin _append_work from {prev_exec_dt} to {exec_dt} in {entry_path}')
         with os.scandir(entry_path) as dir_listing:
             for dir_entry in dir_listing:
                 if dir_entry.is_dir() and self._recursive:
@@ -787,6 +789,7 @@ class LocalFilesDataSourceRunnerMeta(LocalFilesDataSource):
                             if self.default_filter(dir_entry):
                                 self._temp[entry_st_mtime_dt].append(self._temp_storage_name)
                                 self._temp_storage_name = None
+        self._logger.debug('End _append_work')
 
     def _find_work(self, entry_path):
         with os.scandir(entry_path) as dir_listing:
