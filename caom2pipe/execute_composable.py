@@ -1180,7 +1180,6 @@ class NoFheadStoreVisitStageRunnerMeta(NoFheadStoreVisitRunnerMeta):
             interim_name = (
                 f'{self._config.working_directory}/{self._storage_name.obs_id}/{os.path.basename(source_name)}'
             )
-            self._logger.error(interim_name)
             if uri not in self._storage_name.file_info:
                 self._storage_name.file_info[uri] = get_local_file_info(interim_name)
             if uri not in self._storage_name.metadata:

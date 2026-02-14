@@ -1157,8 +1157,8 @@ class TelescopeMapping:
     @staticmethod
     def _update_groups(replace_these, with_these):
         if len(with_these) > 0:
-            while len(replace_these) > 0:
-                replace_these.pop()
+            # while len(replace_these) > 0:
+            #     replace_these.pop()
             for entry in with_these:
                 replace_these.add(entry)
 
@@ -1369,9 +1369,8 @@ class Fits2caom2VisitorRunnerMeta(Fits2caom2Visitor):
     def _get_mappings(self, dest_uri):
         return [TelescopeMapping2(
             self._storage_name,
-            self._storage_name.metadata.get(dest_uri),
             self._clients,
-            self._reporter._observable,
+            self._reporter,
             self._observation,
             self._config,
         )]
