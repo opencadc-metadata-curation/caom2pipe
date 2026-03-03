@@ -2,7 +2,7 @@
 # ******************  CANADIAN ASTRONOMY DATA CENTRE  *******************
 # *************  CENTRE CANADIEN DE DONNÉES ASTRONOMIQUES  **************
 #
-#  (c) 2025.                            (c) 2025.
+#  (c) 2026.                            (c) 2026.
 #  Government of Canada                 Gouvernement du Canada
 #  National Research Council            Conseil national de recherches
 #  Ottawa, Canada, K1A 0R6              Ottawa, Canada, K1A 0R6
@@ -67,6 +67,8 @@
 #
 
 import re
+import requests
+import time
 
 from dataclasses import dataclass
 from treelib import Tree
@@ -198,9 +200,19 @@ class HttpDataSource(IncrementalDataSource):
                     else:
                         self._html_filters.add_children(child_node, self._tree, result)
                         self._descend_html_hierarchy(child_node)
+            except requests.HTTPError as e:
+                if response.status_code == 429:  # Too Many Requests
+                    # Default to a large version of the configured value if header is missing.
+                    # No need to be really impolite to someone else's servers.
+                    retry_after = int(response.headers.get('Retry-After', self._config.rate_limit_delay * 100.0))
+                    self._logger.warning(f'Rate limited. Retrying after {retry_after} seconds.')
+                    time.sleep(retry_after)
+                else:
+                    raise
             finally:
                 if response is not None:
                     response.close()
+            time.sleep(self._config.rate_limit_delay)
         self._logger.debug(f'End _descend_html_hierarchy with {node.tag}')
 
     def _initialize_end_dt(self):
@@ -274,7 +286,7 @@ class HttpDataSource(IncrementalDataSource):
 class HttpDataSourceRunnerMeta(HttpDataSource):
     """This is a temporary class to support refactoring, and when all dependent applications have also been
     refactored to provide the expected StorageName API, this class will be integrated back into the HttpDataSource
-    class. """
+    class."""
 
     def __init__(self, config, start_key, html_filters, session, storage_name_ctor, verify_session=True):
         super().__init__(config, start_key, html_filters, session, verify_session)
