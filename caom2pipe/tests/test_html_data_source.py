@@ -2,7 +2,7 @@
 # ******************  CANADIAN ASTRONOMY DATA CENTRE  *******************
 # *************  CENTRE CANADIEN DE DONNÉES ASTRONOMIQUES  **************
 #
-#  (c) 2025.                            (c) 2025.
+#  (c) 2026.                            (c) 2026.
 #  Government of Canada                 Gouvernement du Canada
 #  National Research Council            Conseil national de recherches
 #  Ottawa, Canada, K1A 0R6              Ottawa, Canada, K1A 0R6
@@ -66,10 +66,12 @@
 # ***********************************************************************
 #
 
+import requests
+
 from caom2pipe import html_data_source
 from caom2pipe.manage_composable import make_datetime, State
 from datetime import datetime
-from mock import Mock, patch
+from mock import call, Mock, patch
 from treelib import Tree
 
 import test_conf
@@ -113,7 +115,6 @@ def test_trees(test_config):
 
 @patch('caom2pipe.html_data_source.query_endpoint_session')
 def test_http(query_mock, test_config, tmp_path):
-
     def _close():
         pass
 
@@ -166,7 +167,6 @@ def test_http(query_mock, test_config, tmp_path):
     session_mock = Mock()
 
     class NeossatPagesTemplate(html_data_source.HtmlFilteredPagesTemplate):
-
         def __init__(self, config):
             super().__init__(config)
 
@@ -213,3 +213,31 @@ def test_http(query_mock, test_config, tmp_path):
         'NEOS_SCI_2022001081159.fits'
     ), 'wrong last url'
     assert last_result.entry_dt == datetime(2022, 8, 22, 15, 30), 'wrong last time'
+
+
+def test_descend_html_hierarchy_rate_limit():
+    """Test _descend_html_hierarchy raises HTTPError for 429 Too Many Requests."""
+    mock_node = Mock()
+    mock_node.tag = "http://example.com"
+    mock_tree = Mock()
+    mock_tree.children.return_value = [mock_node]
+
+    mock_response = Mock()
+    mock_response.status_code = 429
+    mock_response.headers = {"Retry-After": "2"}
+    mock_response.raise_for_status.side_effect = requests.HTTPError("429 Too Many Requests")
+
+    with patch("caom2pipe.html_data_source.query_endpoint_session", return_value=mock_response):
+        with patch("time.sleep") as mock_sleep:
+            test_config = Mock()
+            test_config.rate_limit_delay = 1
+
+            data_source = html_data_source.HttpDataSource(
+                config=test_config,
+                start_key="root",
+                html_filters=Mock(),
+                session=Mock(),
+            )
+            data_source._tree = mock_tree
+            data_source._descend_html_hierarchy(mock_node)
+            mock_sleep.assert_has_calls([call(2), call(1)])  # Ensure sleep was called with Retry-After value

@@ -321,7 +321,6 @@ class State:
 
 
 class StateRay(State):
-
     def __init__(self):
         self.bookmarks = {}
         self.context = {}
@@ -752,7 +751,6 @@ class ExecutionReporter2(ExecutionReporter):
 
 
 class ExecutionReporterRay(ExecutionReporter2):
-
     def __init__(self, config):
         super().__init__(config)
         self._observable = Observable(config)
@@ -1200,6 +1198,7 @@ class Config:
         self._cleanup_success_destination = None
         self._parallel_count = 1
         self._preview_scheme = 'cadc'
+        self._rate_limit_delay = 1.0
         self._scheme = 'cadc'
         self._server_side_resource_id = None
         self._storage_inventory_resource_id = None
@@ -1703,6 +1702,16 @@ class Config:
         self._preview_scheme = value
 
     @property
+    def rate_limit_delay(self):
+        """How long to wait between https requests to a host, to avoid exceeding rate limits.
+        Used only by the html_data_source.HttpDataSource class."""
+        return self._rate_limit_delay
+
+    @rate_limit_delay.setter
+    def rate_limit_delay(self, value):
+        self._rate_limit_delay = value
+
+    @property
     def scheme(self):
         """Scheme for Artifact URIs"""
         return self._scheme
@@ -1776,6 +1785,7 @@ class Config:
             f'  progress_fqn:: {self.progress_fqn}\n'
             f'  proxy_file_name:: {self.proxy_file_name}\n'
             f'  proxy_fqn:: {self.proxy_fqn}\n'
+            f'  rate_limit_delay:: {self.rate_limit_delay}\n'
             f'  rclone_options:: {self.rclone_options}\n'
             f'  recurse_data_sources:: {self.recurse_data_sources}\n'
             f'  rejected_directory:: {self.rejected_directory}\n'
@@ -1935,6 +1945,7 @@ class Config:
             self.store_modified_files_only = config.get('store_modified_files_only', False)
             self.parallel_count = config.get('parallel_count', 1)
             self.preview_scheme = config.get('preview_scheme', 'cadc')
+            self.rate_limit_delay = config.get('rate_limit_delay', 1.0)
             self._report_fqn = os.path.join(
                 self.log_file_directory,
                 f'{os.path.basename(self.working_directory)}_report.txt',
