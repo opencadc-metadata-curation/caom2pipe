@@ -214,9 +214,10 @@ class HttpTransfer(ScienceTransfer):
     Uses HTTP to manage transfers from external sites to local disk.
     """
 
-    def __init__(self, verify_session=True):
+    def __init__(self, verify_session=True, timeout=20):
         super().__init__()
         self._verify_session = verify_session
+        self._timeout = timeout
 
     def get(self, source, dest_fqn):
         """
@@ -225,7 +226,7 @@ class HttpTransfer(ScienceTransfer):
         :return:
         """
         self._logger.debug(f'Transfer from {source} to {dest_fqn}.')
-        mc.http_get(source, dest_fqn, verify=self._verify_session)
+        mc.http_get(source, dest_fqn, verify=self._verify_session, timeout=self._timeout)
         self.check(dest_fqn, source)
         self._logger.debug(f'Successfully retrieved {source}')
 

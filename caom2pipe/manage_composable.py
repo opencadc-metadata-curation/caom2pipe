@@ -321,7 +321,6 @@ class State:
 
 
 class StateRay(State):
-
     def __init__(self):
         self.bookmarks = {}
         self.context = {}
@@ -752,7 +751,6 @@ class ExecutionReporter2(ExecutionReporter):
 
 
 class ExecutionReporterRay(ExecutionReporter2):
-
     def __init__(self, config):
         super().__init__(config)
         self._observable = Observable(config)
@@ -1195,12 +1193,14 @@ class Config:
         self._data_sources = []
         self._data_source_extensions = ['.fits']
         self._data_source_globs = ['*.fits']
+        self._data_source_timeout = 20
         self._recurse_data_sources = True
         self._features = Features()
         self._cleanup_failure_destination = None
         self._cleanup_success_destination = None
         self._parallel_count = 1
         self._preview_scheme = 'cadc'
+        self._rate_limit_delay = 1.0
         self._scheme = 'cadc'
         self._server_side_resource_id = None
         self._storage_inventory_resource_id = None
@@ -1279,6 +1279,14 @@ class Config:
     @data_source_globs.setter
     def data_source_globs(self, value):
         self._data_source_globs = value
+
+    @property
+    def data_source_timeout(self):
+        return self._data_source_timeout
+
+    @data_source_timeout.setter
+    def data_source_timeout(self, value):
+        self._data_source_timeout = value
 
     @property
     def collection(self):
@@ -1712,6 +1720,16 @@ class Config:
         self._preview_scheme = value
 
     @property
+    def rate_limit_delay(self):
+        """How long to wait between https requests to a host, to avoid exceeding rate limits.
+        Used only by the html_data_source.HttpDataSource class."""
+        return self._rate_limit_delay
+
+    @rate_limit_delay.setter
+    def rate_limit_delay(self, value):
+        self._rate_limit_delay = value
+
+    @property
     def scheme(self):
         """Scheme for Artifact URIs"""
         return self._scheme
@@ -1766,6 +1784,7 @@ class Config:
             f'  data_sources:: {self.data_sources}\n'
             f'  data_source_extensions:: {self.data_source_extensions}\n'
             f'  data_source_globs:: {self.data_source_globs}\n'
+            f'  data_source_timeout:: {self.data_source_timeout}\n'
             f'  dump_blueprint:: {self.dump_blueprint}\n'
             f'  failure_fqn:: {self.failure_fqn}\n'
             f'  failure_log_file_name:: {self.failure_log_file_name}\n'
@@ -1786,6 +1805,7 @@ class Config:
             f'  progress_fqn:: {self.progress_fqn}\n'
             f'  proxy_file_name:: {self.proxy_file_name}\n'
             f'  proxy_fqn:: {self.proxy_fqn}\n'
+            f'  rate_limit_delay:: {self.rate_limit_delay}\n'
             f'  rclone_options:: {self.rclone_options}\n'
             f'  recurse_data_sources:: {self.recurse_data_sources}\n'
             f'  rejected_directory:: {self.rejected_directory}\n'
@@ -1897,6 +1917,7 @@ class Config:
             self.data_sources = Config._obtain_list('data_sources', config, [])
             self.data_source_extensions = Config._obtain_list('data_source_extensions', config, ['.fits'])
             self.data_source_globs = Config._obtain_list('data_source_globs', config, ['*.fits'])
+            self.data_source_timeout = config.get('data_source_timeout', 20)
             self.resource_id = config.get('resource_id', 'ivo://cadc.nrc.ca/sc2repo')
             self.tap_id = config.get('tap_id', 'ivo://cadc.nrc.ca/sc2tap')
             self.use_local_files = bool(config.get('use_local_files', False))
@@ -1946,6 +1967,7 @@ class Config:
             self.store_modified_files_only = config.get('store_modified_files_only', False)
             self.parallel_count = config.get('parallel_count', 1)
             self.preview_scheme = config.get('preview_scheme', 'cadc')
+            self.rate_limit_delay = config.get('rate_limit_delay', 1.0)
             self._report_fqn = os.path.join(
                 self.log_file_directory,
                 f'{os.path.basename(self.working_directory)}_report.txt',
