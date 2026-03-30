@@ -1148,6 +1148,7 @@ class Config:
         self._log_to_file = False
         self._log_file_directory = None
         self._lookup = {}
+        self._namespace = None
         self._rclone_options = {}
         self._storage_host = None
         self._task_types = []
@@ -1319,6 +1320,14 @@ class Config:
     @lookup.setter
     def lookup(self, value):
         self._lookup = value
+
+    @property
+    def namespace(self):
+        return self._namespace
+
+    @namespace.setter
+    def namespace(self, value):
+        self._namespace = value
 
     @property
     def rclone_options(self):
@@ -1787,6 +1796,7 @@ class Config:
             f'  logging_level:: {self.logging_level}\n'
             f'  lookup:: {self.lookup}\n'
             f'  meta_read_groups:: {self.meta_read_groups}\n'
+            f'  namespace:: {self.namespace}\n'
             f'  observable_directory:: {self.observable_directory}\n'
             f'  observe_execution:: {self.observe_execution}\n'
             f'  parallel_count:: {self.parallel_count}\n'
@@ -1922,6 +1932,7 @@ class Config:
             self.log_file_directory = config.get('log_file_directory', self.working_directory)
             self.lookup = config.get('lookup', {})
             self.meta_read_groups = config.get('meta_read_groups', [])
+            self.namespace = config.get('namespace', [])
             self.rclone_options = config.get('rclone_options', {})
             self.task_types = Config._obtain_task_types(config, [])
             self.collection = config.get('collection', 'TEST')
@@ -2296,6 +2307,8 @@ class StorageName:
     # scheme for Storage Inventory
     scheme = 'cadc'
     preview_scheme = 'cadc'
+    # string value for StorageInventory namespace
+    namespace = None
     data_source_extensions = ['.fits']
 
     def __init__(
@@ -2350,7 +2363,7 @@ class StorageName:
         )
 
     def _get_uri(self, file_name, scheme):
-        return build_uri(scheme=scheme, archive=StorageName.collection, file_name=file_name)
+        return build_uri(scheme=scheme, archive=StorageName.namespace, file_name=file_name)
 
     @property
     def file_id(self):
@@ -2401,6 +2414,10 @@ class StorageName:
     @property
     def name(self):
         return self._obs_id if self._obs_id is not None else self._file_id
+
+    @property
+    def namespace(self):
+        return self._namespace
 
     @property
     def prev(self):
