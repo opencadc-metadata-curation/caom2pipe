@@ -699,6 +699,7 @@ def common_runner_init(
         f'Setting collection to {config.collection}, preview scheme to {config.preview_scheme} and scheme to '
         f'{config.scheme} in StorageName.'
     )
+    mc.StorageName.namespace = config.namespace
     mc.StorageName.collection = config.collection
     mc.StorageName.preview_scheme = config.preview_scheme
     mc.StorageName.scheme = config.scheme
@@ -798,6 +799,7 @@ def common_runner_init_runner_meta(
         f'Setting collection to {config.collection}, preview scheme to {config.preview_scheme}, scheme to '
         f'{config.scheme} in StorageName, and data_source_extensions to {config.data_source_extensions}.'
     )
+    mc.StorageName.namespace = config.namespace
     mc.StorageName.collection = config.collection
     mc.StorageName.preview_scheme = config.preview_scheme
     mc.StorageName.scheme = config.scheme
