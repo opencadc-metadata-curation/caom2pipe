@@ -2,7 +2,7 @@
 # ******************  CANADIAN ASTRONOMY DATA CENTRE  *******************
 # *************  CENTRE CANADIEN DE DONNÉES ASTRONOMIQUES  **************
 #
-#  (c) 2021.                            (c) 2021.
+#  (c) 2026.                            (c) 2026.
 #  Government of Canada                 Gouvernement du Canada
 #  National Research Council            Conseil national de recherches
 #  Ottawa, Canada, K1A 0R6              Ottawa, Canada, K1A 0R6
@@ -78,10 +78,10 @@ Leave out:
 
 import logging
 import os
+import time
 import traceback
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from io import BytesIO, StringIO
 from sys import getsizeof
 
@@ -240,7 +240,7 @@ def client_put_fqn(client, source_name, destination_name, metrics=None):
 
 def current():
     """Encapsulate returning UTC now in microsecond resolution."""
-    return datetime.now(tz=timezone.utc).timestamp()
+    return time.monotonic()
 
 
 def data_get(client, working_directory, file_name, archive, metrics):
